@@ -1,19 +1,36 @@
 <?php
-session_start();
+declare(strict_types=1);
 
-// Unprotected route: can only be accessed if the user is logged out/unauthenticated
-if (isset($_SESSION['email'])) {
-    header("Location: index.php");
-    exit();
+// Configure safe session cookie parameters before session_start()
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
 }
 
-// Set session and redirect when authenticated
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    if (!empty($email)) {
+// Unprotected route: can only be accessed if the user is logged out/unauthenticated
+if (!empty($_SESSION['email'])) {
+    header('Location: index.php');
+    exit;
+}
+
+// Typed email validation function per Week 5 guidelines
+function isValidEmail(string $email): bool {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+// Server-side authentication handler when valid form is submitted
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    $email = trim((string) ($_POST['email'] ?? ''));
+
+    if ($email !== '' && isValidEmail($email)) {
         $_SESSION['email'] = $email;
-        header("Location: index.php");
-        exit();
+        header('Location: index.php');
+        exit;
     }
 }
 ?>
@@ -56,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return;
             }
 
-            // Client-side validation: check if any email has been registered
+            // Client-side validation: check if any email has been saved
             if (!savedEmail) {
                 e.preventDefault();
                 errorMessage.textContent = 'No registered email found. Please register an account first.';
@@ -70,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return;
             }
 
-            // If email is correct, allow form submission to create PHP session and redirect
+            // Client-side validation passed; form POSTs to PHP to set session
         });
     </script>
 </body>

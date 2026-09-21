@@ -1,10 +1,21 @@
 <?php
-session_start();
+declare(strict_types=1);
+
+// Configure safe session cookie parameters before session_start()
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
 
 // Unprotected route: can only be accessed if the user is logged out/unauthenticated
-if (isset($_SESSION['email'])) {
-    header("Location: index.php");
-    exit();
+if (!empty($_SESSION['email'])) {
+    header('Location: index.php');
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -41,7 +52,7 @@ if (isset($_SESSION['email'])) {
                 return;
             }
 
-            // Save email via localStorage for later validation
+            // Save email via localStorage for validation later
             localStorage.setItem('email', email);
 
             alert('Registration successful! Your email has been saved.');
